@@ -102,6 +102,29 @@ canvas { display:block; }
   background:rgba(0,255,255,.07);
   box-shadow:0 0 40px rgba(0,255,255,.4),inset 0 0 30px rgba(0,255,255,.07);
 }
+#level-config {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:18px;
+}
+#level-label {
+  font-size:.68rem;
+  letter-spacing:4px;
+  color:#1ca7c4;
+  text-transform:uppercase;
+}
+#start-level {
+  width:84px;
+  padding:7px 10px;
+  background:rgba(0,0,0,.4);
+  border:1px solid rgba(0,255,255,.65);
+  color:#00ffff;
+  font-family:'Courier New',monospace;
+  font-size:1rem;
+  text-align:center;
+}
+#start-level:focus { outline:none; box-shadow:0 0 12px rgba(0,255,255,.3); }
 #version-tag {
   margin-top:14px;
   font-size:.7rem;
@@ -144,24 +167,6 @@ canvas { display:block; }
   letter-spacing:2px;
   margin-bottom:14px;
   line-height:1.35;
-}
-#math-worksheet-wrap {
-  width:100%;
-  border:1px solid rgba(255,255,255,.2);
-  background:rgba(255,255,255,.05);
-  margin-bottom:14px;
-  max-height:220px;
-  overflow:hidden;
-  display:none;
-}
-#math-worksheet-wrap.show { display:block; }
-#math-worksheet {
-  width:100%;
-  height:220px;
-  object-fit:cover;
-  object-position:center;
-  display:block;
-  filter:contrast(1.1) saturate(.95);
 }
 #math-choices {
   display:grid;
@@ -235,7 +240,6 @@ canvas { display:block; }
   <div id="math-topic"></div>
   <div id="math-card">
     <div id="math-question"></div>
-    <div id="math-worksheet-wrap"><img id="math-worksheet" alt="Fraction practice worksheet"/></div>
     <div id="math-choices"></div>
     <div id="math-feedback"></div>
   </div>
@@ -253,13 +257,17 @@ canvas { display:block; }
     <span class="key">SPACE / ↑</span><span>JUMP</span>
     <span class="key">SWIPE</span><span>MOBILE</span>
   </div>
+  <div id="level-config">
+    <label id="level-label" for="start-level">Start Level</label>
+    <input id="start-level" type="number" min="1" max="100" step="1" value="1"/>
+  </div>
   <button id="start-btn" onclick="startGame()">Initialize</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
-const GAME_VERSION = '2.1';
+const GAME_VERSION = '2.2';
 document.getElementById('version-tag').textContent = `Version ${GAME_VERSION}`;
 
 // ── RENDERER ──────────────────────────────────────────────────
@@ -652,13 +660,20 @@ function initChunks() {
 let alive=false, pTarget=1;
 let pX=0, pY=0, pVY=0, airborne=false;
 let score=0, coinCount=0, speed=.18, highScore=0;
+let startLevel=1, startSpeedBonus=0;
 let curveDist=0, cameraYaw=0, currentYaw=0;
 let lastMilestone=0, crashCount=0;
 const flashEl=document.getElementById('flash');
 const speedFill=document.getElementById('speedbar-fill');
+const startLevelInput=document.getElementById('start-level');
 let invincTimer=0; // frames of post-hit invincibility
 let comboCount=0, comboTimer=0, comboHideTimer=0;
 const comboEl=document.getElementById('combo');
+
+startLevelInput.addEventListener('change', ()=>{
+  const next=Math.max(1, Math.min(100, parseInt(startLevelInput.value,10)||1));
+  startLevelInput.value=String(next);
+});
 
 window.addEventListener('keydown', e=>{
   if (!alive) return;
@@ -680,6 +695,9 @@ window.addEventListener('touchend',e=>{
 
 // ── GAME STATE ───────────────────────────────────────────────
 function startGame() {
+  startLevel=Math.max(1, Math.min(100, parseInt(startLevelInput.value,10)||1));
+  startLevelInput.value=String(startLevel);
+  startSpeedBonus=((startLevel-1)/99)*.3;
   document.getElementById('overlay').style.display='none';
   document.getElementById('final-score').style.display='none';
   document.getElementById('hi-disp').style.display='none';
@@ -710,17 +728,6 @@ const mathFeedback = document.getElementById('math-feedback');
 const mathLives    = document.getElementById('math-lives');
 const mathTopic    = document.getElementById('math-topic');
 const mathChoices  = document.getElementById('math-choices');
-const worksheetWrap = document.getElementById('math-worksheet-wrap');
-const worksheetImg  = document.getElementById('math-worksheet');
-
-const FRACTION_WORKSHEETS = [
-  'study-images/fractions-guide.png',
-  'study-images/fractions-word-problems-1.png',
-  'study-images/fractions-classwork.png',
-  'study-images/fractions-table.png',
-  'study-images/fractions-homework.png',
-  'study-images/fractions-mixed-numbers.png',
-];
 
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -732,10 +739,6 @@ function shuffle(arr) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
-}
-
-function pickWorksheet(i) {
-  return FRACTION_WORKSHEETS[i % FRACTION_WORKSHEETS.length];
 }
 
 function makeChoiceSet(correct, distractors) {
@@ -759,7 +762,6 @@ function makeQuestionIntroFractions() {
     text: `In ${num}/${den}, what does the denominator tell us?`,
     answer: 'How many equal parts the whole has',
     choices,
-    image: pickWorksheet(0),
   };
 }
 
@@ -781,18 +783,24 @@ function makeQuestionParts() {
     text: prompt,
     answer,
     choices,
-    image: pickWorksheet(1),
   };
 }
 
 function makeQuestionPictures() {
-  const choices = makeChoiceSet('1/3', ['1/2', '1/4', '2/3']);
+  const den = randInt(3, 6);
+  const shaded = randInt(1, den - 1);
+  const bar = `${'■'.repeat(shaded)}${'□'.repeat(den - shaded)}`;
+  const answer = `${shaded}/${den}`;
+  const choices = makeChoiceSet(answer, [
+    `${den - shaded}/${den}`,
+    `${shaded}/${Math.max(2, den - 1)}`,
+    `${Math.min(den, shaded + 1)}/${den}`,
+  ]);
   return {
     topic: 'Representing fractions with pictures',
-    text: 'Look at the worksheet image. Which fraction means 1 out of 3 equal parts is shaded?',
-    answer: '1/3',
+    text: `Picture bar: ${bar}\nEach box is one equal part. What fraction is shaded?`,
+    answer,
     choices,
-    image: pickWorksheet(2),
   };
 }
 
@@ -811,7 +819,6 @@ function makeQuestionEquivalent() {
     text: `Which fraction is equivalent to ${num}/${den}?`,
     answer,
     choices,
-    image: pickWorksheet(3),
   };
 }
 
@@ -831,7 +838,6 @@ function makeQuestionMixedNumbers() {
     text: `Which mixed number is equal to ${improper}/${den}?`,
     answer,
     choices,
-    image: pickWorksheet(4),
   };
 }
 
@@ -848,7 +854,6 @@ function makeQuestionComparing() {
     text: `Which fraction is greater: ${a}/${den} or ${b}/${den}?`,
     answer: bigger,
     choices,
-    image: pickWorksheet(5),
   };
 }
 
@@ -868,7 +873,6 @@ function makeQuestionAddition() {
     text: `${a}/${den} + ${b}/${den} = ?`,
     answer,
     choices,
-    image: pickWorksheet(0),
   };
 }
 
@@ -883,10 +887,9 @@ function makeQuestionWordProblem() {
   ]);
   return {
     topic: 'Fractions in real-life word problems',
-    text: `A pizza has ${total} equal slices. Dad gets ${given} slices. What fraction did Dad get?`,
+    text: `Sally cut a pizza into ${total} equal slices. Dad got ${given} slices. What fraction did Dad get?`,
     answer,
     choices,
-    image: pickWorksheet(1),
   };
 }
 
@@ -905,7 +908,6 @@ function makeQuestionFractionOfQuantity() {
     text: `What is ${numerator}/${denominator} of ${quantity}?`,
     answer,
     choices,
-    image: pickWorksheet(2),
   };
 }
 
@@ -920,9 +922,11 @@ const fractionQuestionBuilders = [
   makeQuestionWordProblem,
   makeQuestionFractionOfQuantity,
 ];
+let fractionTopicIndex = 0;
 
 function generateQuestion() {
-  const builder = fractionQuestionBuilders[randInt(0, fractionQuestionBuilders.length - 1)];
+  const builder = fractionQuestionBuilders[fractionTopicIndex];
+  fractionTopicIndex = (fractionTopicIndex + 1) % fractionQuestionBuilders.length;
   return builder();
 }
 
@@ -933,14 +937,6 @@ function renderFractionQuestion(q) {
   mathFeedback.textContent = '';
   mathFeedback.className = '';
   mathChoices.innerHTML = '';
-
-  if (q.image) {
-    worksheetImg.src = q.image;
-    worksheetWrap.className = 'show';
-  } else {
-    worksheetImg.removeAttribute('src');
-    worksheetWrap.className = '';
-  }
 
   q.choices.forEach(choice => {
     const btn = document.createElement('button');
@@ -1067,7 +1063,7 @@ function loop(t) {
   if (!alive){renderer.render(scene,camera);return;}
 
   // Speed
-  const baseSpeed=Math.min(.18+Math.floor(score/700)*.03,.48);
+  const baseSpeed=Math.min(.18+startSpeedBonus+Math.floor(score/700)*.03,.48);
   speed=baseSpeed;
   score+=speed*.5;
   document.getElementById('score-val').textContent=Math.floor(score);
