@@ -138,35 +138,71 @@ canvas { display:block; }
 #math-overlay {
   position:fixed; inset:0; z-index:200;
   display:none; flex-direction:column; align-items:center; justify-content:center;
-  background:rgba(0,1,14,.97);
+  background:rgba(7,12,24,.93);
   font-family:'Courier New',monospace;
   padding:24px;
 }
 #math-overlay.show { display:flex; }
 #math-header {
-  font-size:.7rem; letter-spacing:8px; color:#ff3399;
-  text-shadow:0 0 12px #ff3399; margin-bottom:8px; text-transform:uppercase;
+  font-size:.74rem; letter-spacing:4px; color:#f3d4df;
+  margin-bottom:8px; text-transform:uppercase;
 }
 #math-lives { font-size:1rem; letter-spacing:4px; color:#ff5555; margin-bottom:10px; }
 #math-topic {
-  font-size:.64rem; letter-spacing:4px; color:#10b6d1;
+  font-size:.7rem; letter-spacing:2px; color:#d8e9ff;
   text-transform:uppercase; margin-bottom:14px;
 }
 #math-card {
   width:min(880px, 96vw);
-  border:1px solid rgba(0,255,255,.35);
-  background:rgba(2,9,24,.7);
-  box-shadow:0 0 24px rgba(0,255,255,.16), inset 0 0 24px rgba(0,255,255,.06);
-  padding:18px;
+  border:2px solid #2c3b54;
+  background:#f4f8ff;
+  color:#172233;
+  box-shadow:0 12px 28px rgba(0,0,0,.35);
+  border-radius:10px;
+  padding:20px;
 }
 #math-question {
-  font-size:clamp(1.1rem,3.4vw,2rem);
+  font-size:clamp(1.05rem,2.4vw,1.4rem);
   font-weight:bold;
-  color:#00ffff;
-  text-shadow:0 0 12px rgba(0,255,255,.7);
-  letter-spacing:2px;
+  color:#172233;
+  text-shadow:none;
+  letter-spacing:.4px;
   margin-bottom:14px;
   line-height:1.35;
+}
+#math-input-area { margin-bottom:12px; }
+#math-input-area.hidden { display:none; }
+.math-input-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+}
+.math-part-label {
+  min-width:28px;
+  font-weight:bold;
+  color:#20344f;
+}
+.math-part-prompt {
+  flex:1;
+  color:#172233;
+  line-height:1.25;
+}
+.math-input-field {
+  min-width:110px;
+  max-width:180px;
+  padding:8px 10px;
+  border:1px solid #8ea6c4;
+  border-radius:6px;
+  font-family:'Courier New',monospace;
+  font-size:1rem;
+  color:#172233;
+  background:#fff;
+}
+.math-input-field:focus {
+  outline:none;
+  border-color:#3d6ea5;
+  box-shadow:0 0 0 2px rgba(74,126,185,.2);
 }
 #math-choices {
   display:grid;
@@ -174,35 +210,56 @@ canvas { display:block; }
   gap:10px;
 }
 .math-choice {
-  background:transparent; border:1px solid #00ffff; color:#00ffff;
+  background:#fff; border:1px solid #8ea6c4; color:#172233;
   font-family:'Courier New',monospace;
-  font-size:clamp(1.5rem,4.2vw,2.4rem);
-  letter-spacing:2px;
+  font-size:clamp(1.15rem,2.6vw,1.55rem);
+  letter-spacing:.4px;
   line-height:1.2;
-  padding:18px 14px;
+  padding:14px 12px;
   cursor:pointer;
-  text-shadow:0 0 8px #00ffff;
+  text-shadow:none;
   transition:all .2s;
   text-transform:none;
   text-align:center;
+  border-radius:8px;
 }
 .math-choice:hover {
-  background:rgba(0,255,255,.1);
-  box-shadow:0 0 20px rgba(0,255,255,.25);
+  background:#eef5ff;
+  border-color:#3d6ea5;
+}
+#math-submit-btn {
+  margin-top:8px;
+  background:#3d6ea5;
+  border:1px solid #365f8f;
+  color:#fff;
+  font-family:'Courier New',monospace;
+  font-size:.95rem;
+  letter-spacing:1px;
+  padding:10px 18px;
+  border-radius:8px;
+  cursor:pointer;
+}
+#math-submit-btn:hover { background:#335883; }
+#math-submit-btn.hidden { display:none; }
+#math-choices.hidden { display:none; }
+#math-submit-btn:disabled, .math-choice:disabled {
+  opacity:.65;
+  cursor:not-allowed;
 }
 #math-feedback {
-  font-size:1rem;
-  letter-spacing:2px;
+  font-size:.95rem;
+  letter-spacing:.2px;
   min-height:1.5rem;
   margin-top:14px;
+  line-height:1.35;
 }
-#math-feedback.correct { color:#00ffaa; text-shadow:0 0 14px #00ffaa; }
-#math-feedback.wrong   { color:#ff3333; text-shadow:0 0 14px #ff3333; }
+#math-feedback.correct { color:#0f7d3f; text-shadow:none; }
+#math-feedback.wrong   { color:#b3261e; text-shadow:none; }
 #math-tip {
   margin-top:14px;
   font-size:.62rem;
-  letter-spacing:4px;
-  color:#0d3344;
+  letter-spacing:2px;
+  color:#9fb6d8;
   text-transform:uppercase;
 }
 @media (max-width: 680px) {
@@ -241,7 +298,9 @@ canvas { display:block; }
   <div id="math-topic"></div>
   <div id="math-card">
     <div id="math-question"></div>
+    <div id="math-input-area" class="hidden"></div>
     <div id="math-choices"></div>
+    <button id="math-submit-btn" class="hidden" type="button">Submit Answer</button>
     <div id="math-feedback"></div>
   </div>
   <div id="math-tip">Pick the correct answer to keep running</div>
@@ -275,7 +334,7 @@ window.MathJax = {
 <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <script>
 'use strict';
-const GAME_VERSION = '2.3.2';
+const GAME_VERSION = '2.3.3';
 document.getElementById('version-tag').textContent = `Version ${GAME_VERSION}`;
 
 // ── RENDERER ──────────────────────────────────────────────────
@@ -731,12 +790,15 @@ function startGame() {
 
 // ── FRACTION CHALLENGE ────────────────────────────────────────
 let currentFractionQuestion = null;
+let currentQuestionResult = null;
 const mathOverlay  = document.getElementById('math-overlay');
 const mathQuestion = document.getElementById('math-question');
 const mathFeedback = document.getElementById('math-feedback');
 const mathLives    = document.getElementById('math-lives');
 const mathTopic    = document.getElementById('math-topic');
 const mathChoices  = document.getElementById('math-choices');
+const mathInputArea = document.getElementById('math-input-area');
+const mathSubmitBtn = document.getElementById('math-submit-btn');
 
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -772,9 +834,63 @@ function typesetMath(scope) {
   window.MathJax.typesetPromise([scope]).catch(()=>{});
 }
 
+function gcd(a,b){
+  let x=Math.abs(a), y=Math.abs(b);
+  while (y){const t=y; y=x%y; x=t;}
+  return x||1;
+}
+
+function parseRational(raw) {
+  const value=String(raw||'').trim();
+  if (!value) return null;
+  let m=/^(\d+)\s+(\d+)\/(\d+)$/.exec(value);
+  if (m) {
+    const w=Number(m[1]), n=Number(m[2]), d=Number(m[3]);
+    if (!d) return null;
+    const num=w*d+n;
+    const g=gcd(num,d);
+    return {num:num/g, den:d/g};
+  }
+  m=/^(\d+)\/(\d+)$/.exec(value);
+  if (m) {
+    const n=Number(m[1]), d=Number(m[2]);
+    if (!d) return null;
+    const g=gcd(n,d);
+    return {num:n/g, den:d/g};
+  }
+  m=/^\d+$/.exec(value);
+  if (m) return {num:Number(m[0]), den:1};
+  return null;
+}
+
+function normalizeText(raw) {
+  return String(raw||'').trim().toLowerCase();
+}
+
+function evaluateAnswer(input, expected, answerType='auto') {
+  if (answerType==='text') return normalizeText(input)===normalizeText(expected);
+  if (answerType==='number') return String(parseInt(input,10))===String(parseInt(expected,10));
+  const lhs=parseRational(input), rhs=parseRational(expected);
+  if (lhs&&rhs) return lhs.num===rhs.num && lhs.den===rhs.den;
+  return normalizeText(input)===normalizeText(expected);
+}
+
 function makeChoiceSet(correct, distractors) {
   const unique = [correct, ...distractors.filter(d => d !== correct)];
   return shuffle(unique.slice(0, 4));
+}
+
+function makeQuestionWriteFraction() {
+  const den = randInt(2, 10);
+  const num = randInt(1, den - 1);
+  return {
+    kind:'fillIn',
+    topic:'Introduction to fractions',
+    text:`A fraction has a numerator of \\(${num}\\) and a denominator of \\(${den}\\). Write the fraction.`,
+    answer:`${num}/${den}`,
+    answerType:'fraction',
+    placeholder:'e.g. 3/5',
+  };
 }
 
 function makeQuestionIntroFractions() {
@@ -789,6 +905,7 @@ function makeQuestionIntroFractions() {
     ]
   );
   return {
+    kind:'mcq',
     topic: 'Introduction to fractions',
     text: `In ${fracTex(num, den)}, what does the denominator tell us?`,
     answer: 'How many equal parts the whole has',
@@ -810,6 +927,7 @@ function makeQuestionParts() {
     String(den + 1),
   ]);
   return {
+    kind:'mcq',
     topic: 'Parts of a fraction',
     text: prompt,
     answer,
@@ -818,18 +936,15 @@ function makeQuestionParts() {
 }
 
 function makeQuestionPictures() {
-  const den = randInt(3, 6);
+  const den = randInt(4, 8);
   const shaded = randInt(1, den - 1);
   const bar = `${'■'.repeat(shaded)}${'□'.repeat(den - shaded)}`;
-  const answer = `${shaded}/${den}`;
-  const choices = makeChoiceSet(answer, [
-    `${den - shaded}/${den}`,
-    `${shaded}/${Math.max(2, den - 1)}`,
-    `${Math.min(den, shaded + 1)}/${den}`,
-  ]);
+  const answer = String(shaded);
+  const choices = makeChoiceSet(answer, [String(den-shaded), String(den), String(Math.max(1, shaded-1))]);
   return {
+    kind:'mcq',
     topic: 'Representing fractions with pictures',
-    text: `Picture bar: ${bar}<br/>Each box is one equal part. What fraction is shaded?`,
+    text: `Shade model: ${bar}<br/>How many pieces are shaded in ${fracTex(shaded, den)} of the whole bar?`,
     answer,
     choices,
   };
@@ -846,6 +961,7 @@ function makeQuestionEquivalent() {
     `${num + 1}/${den + 1}`,
   ]);
   return {
+    kind:'mcq',
     topic: 'Equivalent fractions',
     text: `Which fraction is equivalent to ${fracTex(num, den)}?`,
     answer,
@@ -857,33 +973,38 @@ function makeQuestionMixedNumbers() {
   const whole = randInt(1, 4);
   const den = randInt(2, 6);
   const num = randInt(1, den - 1);
-  const improper = whole * den + num;
-  const answer = `${whole} ${num}/${den}`;
-  const choices = makeChoiceSet(answer, [
-    `${whole} ${den}/${num}`,
-    `${whole + 1} ${num}/${den}`,
-    `${improper}/${den}`,
-  ]);
   return {
+    kind:'multiPart',
     topic: 'Mixed numbers',
-    text: `Which mixed number is equal to ${fracTex(improper, den)}?`,
-    answer,
-    choices,
+    text: `Write the integer part and the fractional part for ${mixedTex(whole,num,den)}.`,
+    parts:[
+      {label:'a)', prompt:'Integer part', answer:String(whole), answerType:'number'},
+      {label:'b)', prompt:'Fraction part', answer:`${num}/${den}`, answerType:'fraction'},
+    ],
+    restoreThreshold:1,
   };
 }
 
 function makeQuestionComparing() {
-  const den = randInt(3, 9);
-  let a = randInt(1, den - 1);
-  let b = randInt(1, den - 1);
-  if (a === b) b = Math.max(1, b - 1);
-  const bigger = a > b ? `${a}/${den}` : `${b}/${den}`;
-  const smaller = a > b ? `${b}/${den}` : `${a}/${den}`;
-  const choices = makeChoiceSet(bigger, [smaller, 'They are equal', `${den - 1}/${den}`]);
+  const byUnit=Math.random()<.5;
+  let left,right;
+  if (byUnit) {
+    const d1=randInt(3,12), d2=randInt(2,11);
+    if (d1===d2) right=`1/${d2+1}`; else right=`1/${d2}`;
+    left=`1/${d1}`;
+  } else {
+    const den=randInt(4,10);
+    const n1=randInt(1,den-2), n2=randInt(n1+1,den-1);
+    left=`${n1}/${den}`; right=`${n2}/${den}`;
+  }
+  const L=parseRational(left), R=parseRational(right);
+  const greater=(L.num/L.den)>(R.num/R.den)?left:right;
+  const choices = makeChoiceSet(greater, [left===greater?right:left, 'They are equal', `${randInt(1,3)}/${randInt(4,9)}`]);
   return {
+    kind:'mcq',
     topic: 'Comparing fractions',
-    text: `Which fraction is greater: ${fracTex(a, den)} or ${fracTex(b, den)}?`,
-    answer: bigger,
+    text: `Circle the largest fraction in this pair: ${toMathLabel(left)} or ${toMathLabel(right)}.`,
+    answer: greater,
     choices,
   };
 }
@@ -900,8 +1021,9 @@ function makeQuestionAddition() {
     `${sum + 1}/${den}`,
   ]);
   return {
+    kind:'mcq',
     topic: 'Basic fraction addition',
-    text: `${fracTex(a, den)} + ${fracTex(b, den)} = ?`,
+    text: `Add: ${fracTex(a, den)} + ${fracTex(b, den)} = ?`,
     answer,
     choices,
   };
@@ -909,40 +1031,42 @@ function makeQuestionAddition() {
 
 function makeQuestionWordProblem() {
   const total = 8;
-  const given = randInt(1, 5);
-  const answer = `${given}/${total}`;
-  const choices = makeChoiceSet(answer, [
-    `${total - given}/${total}`,
-    `${given}/${total - 1}`,
-    `${given + 1}/${total}`,
-  ]);
+  const friends = 4;
+  const each = 1;
+  const givenAway=friends*each;
+  const left=total-givenAway;
   return {
+    kind:'multiPart',
     topic: 'Fractions in real-life word problems',
-    text: `Sally cut a pizza into ${total} equal slices. Dad got ${given} slices. What fraction did Dad get?`,
-    answer,
-    choices,
+    text: `Sally cut a pizza into ${total} equal slices. She gave ${each} slice to each of her ${friends} friends.`,
+    parts:[
+      {label:'a)', prompt:'How many slices were given away?', answer:String(givenAway), answerType:'number'},
+      {label:'b)', prompt:'How many slices were left?', answer:String(left), answerType:'number'},
+      {label:'c)', prompt:'What fraction of the pizza was left?', answer:`${left}/${total}`, answerType:'fraction'},
+    ],
+    restoreThreshold:2,
   };
 }
 
 function makeQuestionFractionOfQuantity() {
-  const denominator = Math.random() < 0.5 ? 2 : 4;
-  const numerator = denominator === 2 ? 1 : randInt(1, 3);
-  const quantity = denominator * randInt(2, 6);
-  const answer = String((quantity / denominator) * numerator);
-  const choices = makeChoiceSet(answer, [
-    String(quantity / denominator),
-    String(quantity - Number(answer)),
-    String(Number(answer) + denominator),
-  ]);
+  const useTime = Math.random()<.5;
+  const denominator = useTime ? 4 : 3;
+  const quantity = useTime ? 60 : 12;
+  const unit = useTime ? 'hour' : 'year';
+  const noun = useTime ? 'minutes' : 'months';
+  const answer = String(quantity / denominator);
   return {
+    kind:'fillIn',
     topic: 'Finding fractions of a quantity',
-    text: `What is ${fracTex(numerator, denominator)} of \\(${quantity}\\)?`,
+    text: `Fill in the blank: How many ${noun} are in ${fracTex(1, denominator)} of a ${unit}?`,
     answer,
-    choices,
+    answerType:'number',
+    placeholder:`${noun}...`,
   };
 }
 
 const fractionQuestionBuilders = [
+  makeQuestionWriteFraction,
   makeQuestionIntroFractions,
   makeQuestionParts,
   makeQuestionPictures,
@@ -954,6 +1078,7 @@ const fractionQuestionBuilders = [
   makeQuestionFractionOfQuantity,
 ];
 let fractionTopicIndex = 0;
+const multipartPassRatio = .67;
 
 function generateQuestion() {
   const builder = fractionQuestionBuilders[fractionTopicIndex];
@@ -963,20 +1088,60 @@ function generateQuestion() {
 
 function renderFractionQuestion(q) {
   currentFractionQuestion = q;
+  currentQuestionResult = null;
   mathTopic.textContent = q.topic;
   mathQuestion.innerHTML = q.text;
-  mathFeedback.textContent = '';
+  mathFeedback.innerHTML = '';
   mathFeedback.className = '';
   mathChoices.innerHTML = '';
+  mathInputArea.innerHTML = '';
+  mathInputArea.classList.add('hidden');
+  mathChoices.classList.remove('hidden');
+  mathSubmitBtn.classList.add('hidden');
+  mathSubmitBtn.disabled=false;
 
-  q.choices.forEach(choice => {
-    const btn = document.createElement('button');
-    btn.className = 'math-choice';
-    btn.type = 'button';
-    btn.innerHTML = toMathLabel(choice);
-    btn.addEventListener('click', () => submitMath(choice));
-    mathChoices.appendChild(btn);
-  });
+  if (q.kind==='mcq') {
+    q.choices.forEach((choice, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'math-choice';
+      btn.type = 'button';
+      btn.innerHTML = `${String.fromCharCode(65+idx)}. ${toMathLabel(choice)}`;
+      btn.addEventListener('click', () => submitMath(choice));
+      mathChoices.appendChild(btn);
+    });
+  }
+
+  if (q.kind==='fillIn') {
+    mathInputArea.classList.remove('hidden');
+    mathChoices.classList.add('hidden');
+    const row=document.createElement('div');
+    row.className='math-input-row';
+    row.innerHTML=`
+      <span class="math-part-label">Ans</span>
+      <input class="math-input-field" id="math-input-single" placeholder="${q.placeholder||'Type answer'}" autocomplete="off"/>
+    `;
+    mathInputArea.appendChild(row);
+    mathSubmitBtn.classList.remove('hidden');
+  }
+
+  if (q.kind==='multiPart') {
+    mathInputArea.classList.remove('hidden');
+    mathChoices.classList.add('hidden');
+    q.parts.forEach((part, idx)=>{
+      const row=document.createElement('div');
+      row.className='math-input-row';
+      row.innerHTML=`
+        <span class="math-part-label">${part.label||`${String.fromCharCode(97+idx)})`}</span>
+        <div class="math-part-prompt">${part.prompt}</div>
+        <input class="math-input-field" id="math-input-part-${idx}" placeholder="Answer" autocomplete="off"/>
+      `;
+      mathInputArea.appendChild(row);
+    });
+    mathSubmitBtn.classList.remove('hidden');
+  }
+
+  const firstInput = mathInputArea.querySelector('.math-input-field');
+  if (firstInput) setTimeout(()=>firstInput.focus(), 50);
   typesetMath(mathOverlay);
 }
 
@@ -1015,7 +1180,39 @@ function submitMath(selectedAnswer) {
   if (!currentFractionQuestion) return;
   if (!mathOverlay.classList.contains('show')) return;
   mathChoices.querySelectorAll('button').forEach(btn=>{btn.disabled=true;});
-  if (selectedAnswer === currentFractionQuestion.answer) {
+  mathInputArea.querySelectorAll('.math-input-field').forEach(input=>{input.disabled=true;});
+  mathSubmitBtn.disabled=true;
+
+  const q=currentFractionQuestion;
+  let passed=false;
+  let feedbackHtml='';
+
+  if (q.kind==='mcq') {
+    passed = selectedAnswer === q.answer;
+    feedbackHtml = passed ? '✓ Correct' : `✗ Incorrect — answer was ${toMathLabel(q.answer)}`;
+  }
+
+  if (q.kind==='fillIn') {
+    const entered=(document.getElementById('math-input-single')?.value||'').trim();
+    passed = evaluateAnswer(entered, q.answer, q.answerType||'auto');
+    feedbackHtml = passed ? '✓ Correct' : `✗ Incorrect — expected ${toMathLabel(q.answer)}`;
+  }
+
+  if (q.kind==='multiPart') {
+    let correctCount=0;
+    const detailRows=[];
+    q.parts.forEach((part, idx)=>{
+      const entered=(document.getElementById(`math-input-part-${idx}`)?.value||'').trim();
+      const ok=evaluateAnswer(entered, part.answer, part.answerType||'auto');
+      if (ok) correctCount++;
+      detailRows.push(`${part.label||`${String.fromCharCode(97+idx)})`} ${ok?'✓':'✗'} ${part.prompt}${ok?'':` (ans: ${toMathLabel(part.answer)})`}`);
+    });
+    const threshold=q.restoreThreshold ?? Math.max(1, Math.ceil(q.parts.length*multipartPassRatio));
+    passed = correctCount>=threshold;
+    feedbackHtml = `${passed?'✓':'✗'} ${correctCount}/${q.parts.length} parts correct (need ${threshold})<br/>${detailRows.join('<br/>')}`;
+  }
+
+  if (passed) {
     if (pendingLifeRestore) lives=Math.min(3,lives+1);
     pendingLifeRestore=false;
     mathFeedback.textContent = `✓ CORRECT — LIFE RESTORED (${lives}/3)`;
@@ -1023,16 +1220,24 @@ function submitMath(selectedAnswer) {
     setTimeout(resumeAfterMath, 700);
   } else {
     pendingLifeRestore=false;
-    mathFeedback.innerHTML = `✗ WRONG — answer was ${toMathLabel(currentFractionQuestion.answer)}`;
+    mathFeedback.innerHTML = feedbackHtml;
     mathFeedback.className = 'wrong';
-    typesetMath(mathFeedback);
     if (lives<=0) {
       setTimeout(realGameOver, 1200);
     } else {
       setTimeout(resumeAfterMath, 1200);
     }
   }
+  typesetMath(mathFeedback);
 }
+
+mathSubmitBtn.addEventListener('click', ()=>submitMath());
+mathOverlay.addEventListener('keydown', e=>{
+  if (e.key==='Enter' && !mathSubmitBtn.classList.contains('hidden') && !mathSubmitBtn.disabled) {
+    e.preventDefault();
+    submitMath();
+  }
+});
 
 function gameOver() {
   if (!alive) return;
