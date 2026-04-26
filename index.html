@@ -176,9 +176,10 @@ canvas { display:block; }
 .math-choice {
   background:transparent; border:1px solid #00ffff; color:#00ffff;
   font-family:'Courier New',monospace;
-  font-size:.9rem;
+  font-size:clamp(1.5rem,4.2vw,2.4rem);
   letter-spacing:2px;
-  padding:11px 10px;
+  line-height:1.2;
+  padding:18px 14px;
   cursor:pointer;
   text-shadow:0 0 8px #00ffff;
   transition:all .2s;
@@ -274,7 +275,7 @@ window.MathJax = {
 <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <script>
 'use strict';
-const GAME_VERSION = '2.3';
+const GAME_VERSION = '2.3.1';
 document.getElementById('version-tag').textContent = `Version ${GAME_VERSION}`;
 
 // ── RENDERER ──────────────────────────────────────────────────
