@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEON DASH</title>
+<title>NEON CREW</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#000; overflow:hidden; font-family:'Courier New',monospace; }
@@ -88,9 +88,55 @@ canvas { display:block; }
 }
 .ctrl-grid {
   display:grid; grid-template-columns:auto auto; gap:8px 24px;
-  font-size:.72rem; letter-spacing:3px; margin-bottom:50px; color:#0f3344;
+  font-size:.72rem; letter-spacing:3px; margin-bottom:30px; color:#0f3344;
 }
 .ctrl-grid .key { color:#1a6677; }
+.character-select {
+  width:min(720px, 92vw);
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:12px;
+  margin-bottom:26px;
+}
+.character-card {
+  background:rgba(0,0,0,.24);
+  border:1px solid rgba(0,255,255,.24);
+  color:#7edce8;
+  font-family:'Courier New',monospace;
+  padding:12px 10px;
+  cursor:pointer;
+  text-align:left;
+  text-transform:uppercase;
+  transition:all .2s;
+}
+.character-card:hover,
+.character-card.selected {
+  border-color:var(--char-accent,#00ffff);
+  color:#fff;
+  box-shadow:0 0 22px rgba(0,255,255,.22), inset 0 0 18px rgba(0,255,255,.05);
+}
+.character-card.selected {
+  background:rgba(0,255,255,.08);
+}
+.character-swatch {
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  margin-bottom:9px;
+  background:var(--char-gradient,linear-gradient(135deg,#ff3399,#00ffff));
+  box-shadow:0 0 16px var(--char-glow,#ff3399);
+}
+.character-name {
+  font-size:.75rem;
+  letter-spacing:3px;
+  margin-bottom:5px;
+}
+.character-role {
+  font-size:.56rem;
+  line-height:1.35;
+  letter-spacing:2px;
+  color:#2d7e92;
+}
 #start-btn {
   background:transparent; border:1px solid #00ffff; color:#00ffff;
   font-family:'Courier New',monospace; font-size:.95rem; letter-spacing:8px;
@@ -263,6 +309,7 @@ canvas { display:block; }
   text-transform:uppercase;
 }
 @media (max-width: 680px) {
+  .character-select { grid-template-columns:1fr; }
   #math-choices { grid-template-columns:1fr; }
 }
 
@@ -307,8 +354,8 @@ canvas { display:block; }
 </div>
 
 <div id="overlay">
-  <h1>NEON DASH</h1>
-  <div class="tagline">ENDLESS RUNNER</div>
+  <h1>NEON CREW</h1>
+  <div class="tagline">CHOOSE YOUR RUNNER</div>
   <div id="version-tag"></div>
   <div id="final-score"></div>
   <div id="hi-disp"></div>
@@ -317,6 +364,7 @@ canvas { display:block; }
     <span class="key">SPACE / ↑</span><span>JUMP</span>
     <span class="key">SWIPE</span><span>MOBILE</span>
   </div>
+  <div class="character-select" id="character-select" aria-label="Select runner"></div>
   <div id="level-config">
     <label id="level-label" for="start-level">Start Level</label>
     <input id="start-level" type="number" min="1" max="100" step="1" value="1"/>
@@ -507,9 +555,49 @@ const M = {
   rampEdge: new THREE.MeshBasicMaterial({color:0x00ffcc,transparent:true,opacity:.9}),
 };
 
-// ── BALL ─────────────────────────────────────────────────────
+// ── RUNNER CHARACTER ─────────────────────────────────────────
 const pg = new THREE.Group();
 worldGrp.add(pg);
+
+const runnerCharacters = [
+  {
+    id:'nova',
+    name:'Nova',
+    role:'Balanced orb pilot',
+    primary:0xff3399,
+    emissive:0xcc0066,
+    wire:0xff88dd,
+    accent:0x00ffff,
+    trail:0xff3399,
+    glow:0xff3399,
+    body:'orb',
+  },
+  {
+    id:'bolt',
+    name:'Bolt',
+    role:'Fast prism striker',
+    primary:0x00e5ff,
+    emissive:0x0066ff,
+    wire:0x99f7ff,
+    accent:0xffdd00,
+    trail:0x00ffff,
+    glow:0x00e5ff,
+    body:'prism',
+  },
+  {
+    id:'ember',
+    name:'Ember',
+    role:'Heavy comet rover',
+    primary:0xff7a18,
+    emissive:0xff2200,
+    wire:0xffbb66,
+    accent:0xff33aa,
+    trail:0xff7a18,
+    glow:0xff6600,
+    body:'comet',
+  },
+];
+let selectedRunner = runnerCharacters[0];
 
 const ballMat = new THREE.MeshLambertMaterial({color:0xff3399,emissive:0xcc0066,emissiveIntensity:.7});
 const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_R,24,20), ballMat);
@@ -528,11 +616,68 @@ const band = new THREE.Mesh(
 band.position.y = BALL_R;
 pg.add(band);
 
+const antennaMat = new THREE.MeshBasicMaterial({color:0x00ffff});
+const antenna = new THREE.Group();
+const antennaStem = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.48,8), antennaMat);
+antennaStem.position.y = BALL_R*2.05;
+const antennaTip = new THREE.Mesh(new THREE.SphereGeometry(.09,10,8), antennaMat);
+antennaTip.position.y = BALL_R*2.32;
+antenna.add(antennaStem, antennaTip);
+pg.add(antenna);
+
 const shadowMat = new THREE.MeshBasicMaterial({color:0xff0066,transparent:true,opacity:.28,depthWrite:false});
 const blobShadow = new THREE.Mesh(new THREE.CircleGeometry(BALL_R*.85,20), shadowMat);
 blobShadow.rotation.x = -Math.PI/2;
 blobShadow.position.y = .005;
 pg.add(blobShadow);
+
+function setMeshGeometry(mesh, geometry) {
+  mesh.geometry.dispose();
+  mesh.geometry = geometry;
+}
+
+function updateRunnerGeometry() {
+  if (selectedRunner.body==='prism') {
+    setMeshGeometry(ball, new THREE.IcosahedronGeometry(BALL_R*1.08,1));
+    setMeshGeometry(wire, new THREE.IcosahedronGeometry(BALL_R*1.15,1));
+    antenna.visible = false;
+    band.rotation.y = Math.PI/2;
+  } else if (selectedRunner.body==='comet') {
+    setMeshGeometry(ball, new THREE.DodecahedronGeometry(BALL_R*1.03,1));
+    setMeshGeometry(wire, new THREE.DodecahedronGeometry(BALL_R*1.1,1));
+    antenna.visible = true;
+    band.rotation.y = Math.PI/4;
+  } else {
+    setMeshGeometry(ball, new THREE.SphereGeometry(BALL_R,24,20));
+    setMeshGeometry(wire, new THREE.SphereGeometry(BALL_R+.04,10,8));
+    antenna.visible = true;
+    band.rotation.y = 0;
+  }
+}
+
+function applyRunnerStyle(isHit=false) {
+  const primary = isHit ? 0xff0000 : selectedRunner.primary;
+  const emissive = isHit ? 0xff0000 : selectedRunner.emissive;
+  ballMat.color.set(primary);
+  ballMat.emissive.set(emissive);
+  ballMat.emissiveIntensity = isHit ? 1.5 : .7;
+  wireMat.color.set(isHit ? 0xffaaaa : selectedRunner.wire);
+  band.material.color.set(selectedRunner.accent);
+  antennaMat.color.set(selectedRunner.accent);
+  shadowMat.color.set(selectedRunner.glow);
+  playerLight.color.set(selectedRunner.glow);
+  trailPool.forEach(g=>g.mat.color.set(selectedRunner.trail));
+}
+
+function resetRunnerPose() {
+  const bandYaw = selectedRunner.body==='prism' ? Math.PI/2 : selectedRunner.body==='comet' ? Math.PI/4 : 0;
+  ball.scale.set(1,1,1);
+  wire.scale.set(1,1,1);
+  ball.rotation.set(0,0,0);
+  wire.rotation.set(0,0,0);
+  band.rotation.set(0,bandYaw,selectedRunner.body==='comet' ? .4 : 0);
+  antenna.rotation.set(0,0,0);
+}
 
 // ── GHOST TRAIL ──────────────────────────────────────────────
 const TRAIL_COUNT = 7;
@@ -737,6 +882,38 @@ const startLevelInput=document.getElementById('start-level');
 let invincTimer=0; // frames of post-hit invincibility
 let comboCount=0, comboTimer=0, comboHideTimer=0;
 const comboEl=document.getElementById('combo');
+const characterSelect=document.getElementById('character-select');
+
+function renderCharacterSelect() {
+  characterSelect.innerHTML = '';
+  runnerCharacters.forEach(char=>{
+    const card=document.createElement('button');
+    card.type='button';
+    card.className=`character-card${char.id===selectedRunner.id?' selected':''}`;
+    card.style.setProperty('--char-accent',`#${char.primary.toString(16).padStart(6,'0')}`);
+    card.style.setProperty('--char-glow',`#${char.emissive.toString(16).padStart(6,'0')}`);
+    card.style.setProperty('--char-gradient',`linear-gradient(135deg,#${char.primary.toString(16).padStart(6,'0')},#${char.accent.toString(16).padStart(6,'0')})`);
+    card.setAttribute('aria-pressed',char.id===selectedRunner.id?'true':'false');
+    card.innerHTML = `
+      <div class="character-swatch"></div>
+      <div class="character-name">${char.name}</div>
+      <div class="character-role">${char.role}</div>
+    `;
+    card.addEventListener('click',()=>{
+      selectedRunner=char;
+      updateRunnerGeometry();
+      resetRunnerPose();
+      applyRunnerStyle();
+      renderCharacterSelect();
+    });
+    characterSelect.appendChild(card);
+  });
+}
+
+updateRunnerGeometry();
+resetRunnerPose();
+applyRunnerStyle();
+renderCharacterSelect();
 
 startLevelInput.addEventListener('change', ()=>{
   const next=Math.max(1, Math.min(100, parseInt(startLevelInput.value,10)||1));
@@ -777,9 +954,8 @@ function startGame() {
   comboCount=0; comboTimer=0; comboHideTimer=0;
   comboEl.className=''; comboEl.textContent='';
   pg.position.set(0,0,0); pg.rotation.set(0,0,0);
-  ball.scale.set(1,1,1); wire.scale.set(1,1,1);
-  ball.rotation.set(0,0,0); wire.rotation.set(0,0,0); band.rotation.set(0,0,0);
-  ballMat.color.set(0xff3399); ballMat.emissive.set(0xcc0066); ballMat.emissiveIntensity=.7;
+  resetRunnerPose();
+  applyRunnerStyle();
   camera.position.set(0,6,12); camera.rotation.set(0,0,0);
   worldGrp.rotation.y=0;
   trailPool.forEach(g=>g.mesh.visible=false);
@@ -1157,14 +1333,14 @@ function resumeAfterMath() {
   mathOverlay.className = '';
   // Grant invincibility so players have room after restarting motion.
   invincTimer = 180;
-  ballMat.color.set(0xff3399); ballMat.emissive.set(0xcc0066); ballMat.emissiveIntensity=.7;
+  applyRunnerStyle();
   alive = true;
 }
 
 function realGameOver() {
   mathOverlay.className = '';
   if (score>highScore) highScore=score;
-  ballMat.color.set(0xff3399); ballMat.emissive.set(0xcc0066); ballMat.emissiveIntensity=.7;
+  applyRunnerStyle();
   document.getElementById('overlay').style.display='flex';
   const fs=document.getElementById('final-score');
   fs.style.display='block';
@@ -1244,7 +1420,7 @@ function gameOver() {
   alive=false;
   lives=Math.max(0,lives-1);
   pendingLifeRestore=true;
-  ballMat.color.set(0xff0000); ballMat.emissive.set(0xff0000); ballMat.emissiveIntensity=1.5;
+  applyRunnerStyle(true);
   setTimeout(showMathChallenge, 650);
 }
 
@@ -1379,7 +1555,7 @@ function loop(t) {
     wire.scale.x=ball.scale.x; wire.scale.y=ball.scale.y; wire.scale.z=ball.scale.z;
   }
 
-  ballMat.color.set(0xff3399); ballMat.emissiveIntensity=.7;
+  applyRunnerStyle();
 
   pg.position.set(pX,pY,0);
   pg.rotation.z=-(tgtX-pX)*.22;
@@ -1407,7 +1583,7 @@ function loop(t) {
       g.mesh.visible=true;
       g.mesh.position.set(g.x,g.y,g.z);
       g.mat.opacity=fade*.2;
-      g.mat.color.set(0xff3399);
+      g.mat.color.set(selectedRunner.trail);
     } else { g.mesh.visible=false; }
   });
 
