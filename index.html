@@ -869,14 +869,18 @@ function normalizeText(raw) {
 
 function evaluateAnswer(input, expected, answerType='auto') {
   if (answerType==='text') return normalizeText(input)===normalizeText(expected);
-  if (answerType==='number') return String(parseInt(input,10))===String(parseInt(expected,10));
+  if (answerType==='number') {
+    const lhs=String(input||'').trim(), rhs=String(expected||'').trim();
+    if (!/^\d+$/.test(lhs) || !/^\d+$/.test(rhs)) return false;
+    return Number(lhs)===Number(rhs);
+  }
   const lhs=parseRational(input), rhs=parseRational(expected);
   if (lhs&&rhs) return lhs.num===rhs.num && lhs.den===rhs.den;
   return normalizeText(input)===normalizeText(expected);
 }
 
 function makeChoiceSet(correct, distractors) {
-  const unique = [correct, ...distractors.filter(d => d !== correct)];
+  const unique = [...new Set([correct, ...distractors.filter(d => d !== correct)])];
   return shuffle(unique.slice(0, 4));
 }
 
