@@ -54,6 +54,7 @@ canvas { display:block; }
 #score-val { color:#00ffff; text-shadow:0 0 12px #00ffff,0 0 24px #004455; }
 #coins-val { color:#ffdd00; text-shadow:0 0 10px #ffaa00; font-size:1.5rem; }
 #hi-val    { color:#00ffaa; font-size:1.3rem; text-shadow:0 0 10px #00ffaa; }
+#runner-val { color:#ff77cc; font-size:.9rem; letter-spacing:4px; text-shadow:0 0 10px #ff3399; text-transform:uppercase; }
 
 #combo {
   position:fixed; top:42%; left:50%; transform:translate(-50%,-50%);
@@ -330,6 +331,8 @@ canvas { display:block; }
   <div style="display:flex;flex-direction:column;align-items:center">
     <div class="s-label" style="text-align:center">Best</div>
     <div class="s-val" id="hi-val">0</div>
+    <div class="s-label" style="text-align:center">Runner</div>
+    <div class="s-val" id="runner-val">Nova</div>
   </div>
   <div style="text-align:right">
     <div class="s-label">Coins</div>
@@ -879,6 +882,7 @@ let lastMilestone=0, lives=3, pendingLifeRestore=false;
 const flashEl=document.getElementById('flash');
 const speedFill=document.getElementById('speedbar-fill');
 const startLevelInput=document.getElementById('start-level');
+const runnerVal=document.getElementById('runner-val');
 let invincTimer=0; // frames of post-hit invincibility
 let comboCount=0, comboTimer=0, comboHideTimer=0;
 const comboEl=document.getElementById('combo');
@@ -904,15 +908,23 @@ function renderCharacterSelect() {
       updateRunnerGeometry();
       resetRunnerPose();
       applyRunnerStyle();
+      updateRunnerHud();
       renderCharacterSelect();
     });
     characterSelect.appendChild(card);
   });
 }
 
+function updateRunnerHud() {
+  runnerVal.textContent = selectedRunner.name;
+  runnerVal.style.color = `#${selectedRunner.primary.toString(16).padStart(6,'0')}`;
+  runnerVal.style.textShadow = `0 0 10px #${selectedRunner.glow.toString(16).padStart(6,'0')}`;
+}
+
 updateRunnerGeometry();
 resetRunnerPose();
 applyRunnerStyle();
+updateRunnerHud();
 renderCharacterSelect();
 
 startLevelInput.addEventListener('change', ()=>{
