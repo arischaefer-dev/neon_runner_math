@@ -385,7 +385,7 @@ window.MathJax = {
 <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <script>
 'use strict';
-const GAME_VERSION = '2.3.4';
+const GAME_VERSION = '2.3.5';
 document.getElementById('version-tag').textContent = `Version ${GAME_VERSION}`;
 
 // ── RENDERER ──────────────────────────────────────────────────
@@ -1144,9 +1144,9 @@ function makeQuestionPictures() {
 }
 
 function makeQuestionEquivalent() {
-  const den = randInt(2, 6);
+  const den = randInt(2, 5);
   const num = randInt(1, den - 1);
-  const mul = randInt(2, 5);
+  const mul = randInt(2, 3);
   const answer = `${num * mul}/${den * mul}`;
   const choices = makeChoiceSet(answer, [
     `${num + mul}/${den * mul}`,
@@ -1163,18 +1163,21 @@ function makeQuestionEquivalent() {
 }
 
 function makeQuestionEquivalentMissingNumber() {
-  const den = randInt(2, 8);
-  const num = randInt(1, den - 1);
-  const mul = randInt(2, 6);
-  const missingNumerator = Math.random()<.5;
-  const answer = String(missingNumerator ? num * mul : den * mul);
-  const prompt = missingNumerator
-    ? `${fracTex(num, den)} = \\(\\frac{?}{${den * mul}}\\). What number is missing?`
-    : `${fracTex(num, den)} = \\(\\frac{${num * mul}}{?}\\). What number is missing?`;
+  const starters = [
+    {num:1, den:2},
+    {num:1, den:3},
+    {num:1, den:4},
+    {num:2, den:3},
+    {num:2, den:4},
+  ];
+  const base = starters[randInt(0, starters.length-1)];
+  const mul = randInt(2, 3);
+  const answer = String(base.num * mul);
+  const prompt = `${fracTex(base.num, base.den)} = \\(\\frac{?}{${base.den * mul}}\\). What number is missing?`;
   const choices = makeChoiceSet(answer, [
     String(Number(answer)+mul),
     String(Math.max(1, Number(answer)-mul)),
-    String(missingNumerator ? den * mul : num * mul),
+    String(base.den * mul),
   ]);
   return {
     kind:'mcq',
