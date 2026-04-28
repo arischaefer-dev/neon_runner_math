@@ -385,7 +385,7 @@ window.MathJax = {
 <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <script>
 'use strict';
-const GAME_VERSION = '2.3.3';
+const GAME_VERSION = '2.3.4';
 document.getElementById('version-tag').textContent = `Version ${GAME_VERSION}`;
 
 // ── RENDERER ──────────────────────────────────────────────────
@@ -1064,7 +1064,12 @@ function evaluateAnswer(input, expected, answerType='auto') {
 }
 
 function makeChoiceSet(correct, distractors) {
-  const unique = [correct, ...distractors.filter(d => d !== correct)];
+  const unique = [];
+  [correct, ...distractors].forEach(choice=>{
+    if (choice !== correct && unique.includes(choice)) return;
+    if (choice === correct && unique.includes(correct)) return;
+    unique.push(choice);
+  });
   return shuffle(unique.slice(0, 4));
 }
 
@@ -1141,7 +1146,7 @@ function makeQuestionPictures() {
 function makeQuestionEquivalent() {
   const den = randInt(2, 6);
   const num = randInt(1, den - 1);
-  const mul = randInt(2, 3);
+  const mul = randInt(2, 5);
   const answer = `${num * mul}/${den * mul}`;
   const choices = makeChoiceSet(answer, [
     `${num + mul}/${den * mul}`,
@@ -1152,6 +1157,50 @@ function makeQuestionEquivalent() {
     kind:'mcq',
     topic: 'Equivalent fractions',
     text: `Which fraction is equivalent to ${fracTex(num, den)}?`,
+    answer,
+    choices,
+  };
+}
+
+function makeQuestionEquivalentMissingNumber() {
+  const den = randInt(2, 8);
+  const num = randInt(1, den - 1);
+  const mul = randInt(2, 6);
+  const missingNumerator = Math.random()<.5;
+  const answer = String(missingNumerator ? num * mul : den * mul);
+  const prompt = missingNumerator
+    ? `${fracTex(num, den)} = \\(\\frac{?}{${den * mul}}\\). What number is missing?`
+    : `${fracTex(num, den)} = \\(\\frac{${num * mul}}{?}\\). What number is missing?`;
+  const choices = makeChoiceSet(answer, [
+    String(Number(answer)+mul),
+    String(Math.max(1, Number(answer)-mul)),
+    String(missingNumerator ? den * mul : num * mul),
+  ]);
+  return {
+    kind:'mcq',
+    topic: 'Equivalent fractions',
+    text: prompt,
+    answer,
+    choices,
+  };
+}
+
+function makeQuestionSimplifyEquivalent() {
+  const baseDen = randInt(3, 9);
+  const baseNum = randInt(1, baseDen - 1);
+  const factor = randInt(2, 5);
+  const top = baseNum * factor;
+  const bottom = baseDen * factor;
+  const answer = `${baseNum}/${baseDen}`;
+  const choices = makeChoiceSet(answer, [
+    `${Math.max(1, baseNum - 1)}/${baseDen}`,
+    `${baseNum}/${baseDen + 1}`,
+    `${top}/${baseDen}`,
+  ]);
+  return {
+    kind:'mcq',
+    topic: 'Equivalent fractions',
+    text: `Reduce ${fracTex(top, bottom)} to an equivalent fraction in simplest form.`,
     answer,
     choices,
   };
@@ -1198,9 +1247,9 @@ function makeQuestionComparing() {
 }
 
 function makeQuestionAddition() {
-  const den = randInt(3, 10);
-  const a = randInt(1, den - 2);
-  const b = randInt(1, den - a);
+  const den = [4, 5, 6, 8, 10, 12][randInt(0, 5)];
+  const a = randInt(1, Math.floor(den/2));
+  const b = randInt(1, den - a - 1);
   const sum = a + b;
   const answer = sum === den ? '1' : `${sum}/${den}`;
   const choices = makeChoiceSet(answer, [
@@ -1214,6 +1263,41 @@ function makeQuestionAddition() {
     text: `Add: ${fracTex(a, den)} + ${fracTex(b, den)} = ?`,
     answer,
     choices,
+  };
+}
+
+function makeQuestionAdditionWordProblem() {
+  const den = [6, 8, 10, 12][randInt(0, 3)];
+  const first = randInt(1, Math.floor(den/3));
+  const second = randInt(1, Math.floor(den/2));
+  const sum = first + second;
+  const answer = sum === den ? '1' : `${sum}/${den}`;
+  const choices = makeChoiceSet(answer, [
+    `${first}/${den}`,
+    `${second}/${den}`,
+    `${Math.min(den - 1, sum + 1)}/${den}`,
+  ]);
+  return {
+    kind:'mcq',
+    topic: 'Fraction addition',
+    text: `Mia read ${fracTex(first, den)} of a book before lunch and ${fracTex(second, den)} after lunch. What fraction of the book did she read?`,
+    answer,
+    choices,
+  };
+}
+
+function makeQuestionAdditionFillIn() {
+  const den = [4, 6, 8, 10][randInt(0, 3)];
+  const first = randInt(1, Math.floor(den/2));
+  const total = randInt(first + 1, den - 1);
+  const missing = total - first;
+  return {
+    kind:'fillIn',
+    topic: 'Fraction addition',
+    text: `Fill in the missing numerator: ${fracTex(first, den)} + \\(\\frac{?}{${den}}\\) = ${fracTex(total, den)}.`,
+    answer:String(missing),
+    answerType:'number',
+    placeholder:'missing numerator',
   };
 }
 
@@ -1253,17 +1337,61 @@ function makeQuestionFractionOfQuantity() {
   };
 }
 
+function makeQuestionPartsOfYear() {
+  const options = [
+    {fraction:'1/2', months:6, label:'one-half'},
+    {fraction:'1/3', months:4, label:'one-third'},
+    {fraction:'1/4', months:3, label:'one-fourth'},
+    {fraction:'1/6', months:2, label:'one-sixth'},
+    {fraction:'3/4', months:9, label:'three-fourths'},
+  ];
+  const picked = options[randInt(0, options.length-1)];
+  const choices = makeChoiceSet(String(picked.months), ['2','3','4','6','9','12']);
+  return {
+    kind:'mcq',
+    topic: 'Parts of a year',
+    text: `How many months are in ${toMathLabel(picked.fraction)} of a year?`,
+    answer:String(picked.months),
+    choices,
+  };
+}
+
+function makeQuestionYearFractionFromMonths() {
+  const options = [
+    {months:2, fraction:'1/6'},
+    {months:3, fraction:'1/4'},
+    {months:4, fraction:'1/3'},
+    {months:6, fraction:'1/2'},
+    {months:9, fraction:'3/4'},
+  ];
+  const picked = options[randInt(0, options.length-1)];
+  const choices = makeChoiceSet(picked.fraction, ['1/12','1/6','1/4','1/3','1/2','3/4']);
+  return {
+    kind:'mcq',
+    topic: 'Parts of a year',
+    text: `${picked.months} months is what fraction of a year?`,
+    answer:picked.fraction,
+    choices,
+  };
+}
+
 const fractionQuestionBuilders = [
   makeQuestionWriteFraction,
   makeQuestionIntroFractions,
   makeQuestionParts,
   makeQuestionPictures,
   makeQuestionEquivalent,
+  makeQuestionEquivalentMissingNumber,
+  makeQuestionSimplifyEquivalent,
   makeQuestionMixedNumbers,
   makeQuestionComparing,
   makeQuestionAddition,
+  makeQuestionAdditionWordProblem,
+  makeQuestionAdditionFillIn,
   makeQuestionWordProblem,
   makeQuestionFractionOfQuantity,
+  makeQuestionPartsOfYear,
+  makeQuestionYearFractionFromMonths,
 ];
 let fractionTopicIndex = 0;
 const multipartPassRatio = .67;
